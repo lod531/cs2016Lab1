@@ -3,70 +3,72 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-const int NUMBER_OF_PI_DIGITS = 4;
+const int NUMBER_OF_TERMS_PER_THREAD = 4000;
 
-int exponent(int base, int exponent)
+const int NUMBER_OF_THREADS = 4;
+
+const double * TERMS = malloc(sizeof(double) * 4);
+
+double nilakantha(double k)
 {
-	int result = 1;
-	int i;
-	for(i = 0; i < exponent; i++)
-	{
-		result *= base;
-	}
+	double result = 4/(k*(k+1)*(k+2));
 	return result;
 }
 
-double BBP(int k)
+void * calculatePiDigitThreaded(void *threadID) 
 {
-	int i;
+	double startTerm = 2 + NUMBER_OF_TERMS_PER_THREAD * (int)(threadID);
+	double endTerm = startTerm + 2*NUMBER_OF_TERMS_PER_THREAD;
 	double result = 0;
-	for(i = 0; i < k; i++)
-	{	
-		double currentTerm = 1;
+	double sign = 1;
+	int i;
+	for(i = startTerm; i < endTerm; i+= 2)
+	{
+		double currentTerm = nilakantha((double)i);
+		currentTerm *= sign;
+		sign = (sign > 0)? 1 : -1;
+		result += currentTerm;
+	}
+	int threadIDtemp = (int) threadID;
+	TERMS[threadIDtemp] = result;
+	pthread_exit(NULL);
+}
 
-		currentTerm /= exponent(16, i);
+double calculatePiDigitTest(void *threadID) 
+{
 
-		currentTerm *= 4*(8*i + 1) -2*(8*i + 4) -1*(8*i + 5) -1*(8*i + 6);
-
+	int startTerm = 2 + NUMBER_OF_TERMS_PER_THREAD * (int)(threadID);
+	int endTerm = startTerm + 2*NUMBER_OF_TERMS_PER_THREAD;
+	long double result = 0;
+	int sign = 1;
+	int i;
+	for(i = startTerm; i < endTerm; i+= 2)
+	{
+		double currentTerm = nilakantha((double)i);
+		currentTerm *= (double)sign;
+		sign *= -1;
 		result += currentTerm;
 	}
 	return result;
 }
 
-void * calculatePiDigit(void *threadid) 
-{
-	int temp = (int)threadid + 1;
-	int i;
-	int digit = 0;
-	for(i = 0; i < temp; i++)
-	{
-		int quotient = exponent(16, i);
-
-	}
-	pthread_exit(NULL);
-}
-
 int main (int argc, const char * argv[]) 
 {
-	double test = BBP(1);
-	printf("%lf\n",test);
-	/*
-	pthread_t threads[NUMBER_OF_PI_DIGITS];
-	int rc,t;
-	for (t=0;t<NUMBER_OF_PI_DIGITS;t++) 
+	pthread_t threads[NUMBER_OF_THREADS];
+	int threadFailure,threadID;
+	for (threadID=0;threadID<NUMBER_OF_THREADS;threadID++) 
 	{
-		printf("Creating thread %d\n",t);
-		rc = pthread_create(&threads[t],NULL,  calculatePiDigit,(void *)t);
-		if (rc) 
+		printf("Creating thread %d\n",threadID);
+		threadFailure = pthread_create(&threads[threadID],NULL,  calculatePiDigitThreaded,(void *)threadID);
+		if (threadFailure) 
 		{
-			printf("ERROR return code from pthread_create(): %d\n",rc);
+			printf("ERROR return code from pthread_create(): %d\n",threadFailure);
 			exit(-1);
 		}
 	}
 
-	for(t=0;t<NUMBER_OF_PI_DIGITS;t++) 
+	for(threadID=0;threadID<NUMBER_OF_THREADS;threadID++) 
 	{
-		 pthread_join( threads[t], NULL);
+		 pthread_join( threads[threadID], NULL);
 	}
-	*/
 }
