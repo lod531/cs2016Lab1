@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-const int NUMBER_OF_TERMS_PER_THREAD = 4000;
+const int NUMBER_OF_TERMS_PER_THREAD = 40000;
 
 const int NUMBER_OF_THREADS = 4;
 
-const double * TERMS = malloc(sizeof(double) * 4);
+double * TERMS;
 
 double nilakantha(double k)
 {
@@ -17,7 +17,8 @@ double nilakantha(double k)
 
 void * calculatePiDigitThreaded(void *threadID) 
 {
-	double startTerm = 2 + NUMBER_OF_TERMS_PER_THREAD * (int)(threadID);
+	int threadIDtemp = (int) threadID;
+	double startTerm = 2 + (NUMBER_OF_TERMS_PER_THREAD * threadIDtemp);
 	double endTerm = startTerm + 2*NUMBER_OF_TERMS_PER_THREAD;
 	double result = 0;
 	double sign = 1;
@@ -29,31 +30,14 @@ void * calculatePiDigitThreaded(void *threadID)
 		sign = (sign > 0)? 1 : -1;
 		result += currentTerm;
 	}
-	int threadIDtemp = (int) threadID;
 	TERMS[threadIDtemp] = result;
 	pthread_exit(NULL);
 }
 
-double calculatePiDigitTest(void *threadID) 
-{
-
-	int startTerm = 2 + NUMBER_OF_TERMS_PER_THREAD * (int)(threadID);
-	int endTerm = startTerm + 2*NUMBER_OF_TERMS_PER_THREAD;
-	long double result = 0;
-	int sign = 1;
-	int i;
-	for(i = startTerm; i < endTerm; i+= 2)
-	{
-		double currentTerm = nilakantha((double)i);
-		currentTerm *= (double)sign;
-		sign *= -1;
-		result += currentTerm;
-	}
-	return result;
-}
-
 int main (int argc, const char * argv[]) 
 {
+
+	TERMS = malloc(sizeof(double) * NUMBER_OF_THREADS);
 	pthread_t threads[NUMBER_OF_THREADS];
 	int threadFailure,threadID;
 	for (threadID=0;threadID<NUMBER_OF_THREADS;threadID++) 
@@ -71,4 +55,12 @@ int main (int argc, const char * argv[])
 	{
 		 pthread_join( threads[threadID], NULL);
 	}
+
+	double result = 3;
+	int i;
+	for(i = 0; i < NUMBER_OF_THREADS; i++)
+	{
+		result+=TERMS[i];
+	}
+	printf("%lf\n",result);
 }
