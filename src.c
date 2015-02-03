@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-const int NUMBER_OF_TERMS_PER_THREAD = 40000;
+const int NUMBER_OF_TERMS_PER_THREAD = 10000;
 
-const int NUMBER_OF_THREADS = 4;
+const int NUMBER_OF_THREADS = 8;
 
 double * TERMS;
 
@@ -18,16 +18,17 @@ double nilakantha(double k)
 void * calculatePiDigitThreaded(void *threadID) 
 {
 	int threadIDtemp = (int) threadID;
-	double startTerm = 2 + (NUMBER_OF_TERMS_PER_THREAD * threadIDtemp);
+	double startTerm = 2 + (NUMBER_OF_TERMS_PER_THREAD * threadIDtemp * 2);
 	double endTerm = startTerm + 2*NUMBER_OF_TERMS_PER_THREAD;
 	double result = 0;
 	double sign = 1;
 	int i;
 	for(i = startTerm; i < endTerm; i+= 2)
 	{
+		printf("Current i %d\n",i);
 		double currentTerm = nilakantha((double)i);
 		currentTerm *= sign;
-		sign = (sign > 0)? 1 : -1;
+		sign = sign * -1;
 		result += currentTerm;
 	}
 	TERMS[threadIDtemp] = result;
@@ -36,6 +37,13 @@ void * calculatePiDigitThreaded(void *threadID)
 
 int main (int argc, const char * argv[]) 
 {
+	unsigned long micros = 0;
+	float millis = 0.0;
+	clock_t start, end;
+
+	start = clock();
+
+
 
 	TERMS = malloc(sizeof(double) * NUMBER_OF_THREADS);
 	pthread_t threads[NUMBER_OF_THREADS];
@@ -60,7 +68,13 @@ int main (int argc, const char * argv[])
 	int i;
 	for(i = 0; i < NUMBER_OF_THREADS; i++)
 	{
+		printf("%lf\n",TERMS[i]);
 		result+=TERMS[i];
 	}
 	printf("%lf\n",result);
+
+	end = clock();
+
+	micros = end - start;
+	printf("Microseconds taken: %d\n", micros);
 }
